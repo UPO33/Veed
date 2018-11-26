@@ -2,28 +2,34 @@
 #include <windows.h>
 #include <csignal>
 
+#define VRUN_TEST(funcname) \
+	extern void funcname(); \
+	printf("\n------%s-----\n", #funcname);\
+	funcname();\
+
+
 void MainGuarded()
 {
-	extern void VTest_Array();
-	extern void VTest_Log();
-	extern void VTest_Serializer();
-	extern void VTest_Smart();
+	VRUN_TEST(VTest_Array);
+	VRUN_TEST(VTest_Log);
+	VRUN_TEST(VTest_Serializer);
+	VRUN_TEST(VTest_Smart);
+	VRUN_TEST(VTes_BitSteam);
 
-	VTest_Array();
-	VTest_Log();
-	VTest_Serializer();
-	VTest_Smart();
+	//VTest_Guard();
 }
 void signal_handler(int signal)
 {
 	printf("sig\n");
 	system("pause");
 }
+
 int main(int argc, char** argv)
 {
 	// Install a signal handler
 	std::signal(SIGABRT, signal_handler);
 	MainGuarded();
+	system("pause");
 	/*
 	__try
 	{

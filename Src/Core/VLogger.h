@@ -39,19 +39,114 @@ enum ELogLevel
 	ELL_Success,
 	ELL_Warning,
 	ELL_Error,
+	ELL_Debug,
+	ELL_Hint,
 };
 
+//a simple linear allocator on the stack which only grows
+template<size_t SizeInByte> struct VLinerAllocStack
+{
+	size_t mSize = 0;
+	uint8_t mBuffer[SizeInByte];
 
+	size_t Avail() const { return mSize - SizeInByte; }
+
+	void* Alloc(size_t size)
+	{
+		if (size <= Avail())
+		{
+			auto ret = &mBuffer[mSize];
+			mSize += size;
+			return ret;
+		}
+		return nullptr;
+	}
+};
 struct VLogToken
 {
-	unsigned mIndex;
-	bool bIsParam;
+	//index of the first character of string in the buffer. the token is null terminated.
+	unsigned mIndex : 31;
+	//whether its parameter or normal text
+	unsigned mIsParam : 1;
 };
+struct VLogTokenPack
+{
+	static constexpr unsigned MAX_TOKEN = 1024;
+	static constexpr unsigned BUFFER_SIZE = 8192;
+	
+	unsigned	mTokenCount = 0;
+	unsigned	mStringBufferSize = 0;
+	char		mStringBuffer[BUFFER_SIZE];
+	VLogToken	mTokens[MAX_TOKEN];
+	
+	const char* GetTokenStr(int index) const 
+	{
+		return &mStringBuffer[mTokens[index].mIndex];
+	}
+	
+	void NewToken(bool bIsParam)
+	{
+		mTokens[mTokenCount].mIndex = mStringBufferSize;
+		mTokens[mTokenCount].mIsParam = bIsParam;
+		mTokenCount++;
+		assert(mTokenCount < MAX_TOKEN);
+	}
+	void PushChr(char chr)
+	{
+		assert(mStringBufferSize < BUFFER_SIZE - 1);
+		mStringBuffer[mStringBufferSize++] = chr;
+	}
+	void PushStr(const char* str, size_t len)
+	{
+		memcpy(&mStringBuffer[mStringBufferSize], str, len);
+		mStringBufferSize += len;
+		assert(mStringBufferSize < BUFFER_SIZE);
+	}
+	void PushStr(const char* str)
+	{
+		PushStr(str, strlen(str));
+	}
+	void End()
+	{
+		PushChr(0);
+	}
+	void Print() const;
+};
+
+
+//////////////////////////////////////////////////////////////////////////
+inline void VGetLogString(bool b, char* out, size_t size )
+{
+	snprintf(out, size, "%s", b ? "true" : "false");
+}
+inline void VGetLogString(int i, char* out, size_t size)
+{
+	snprintf(out, size, "%d", i);
+}
+inline void VGetLogString(double d, char* out, size_t size)
+{
+	snprintf(out, size, "%f", d);
+}
+inline void VGetLogString(unsigned i, char* out, size_t size)
+{
+	snprintf(out, size, "%u", i);
+}
+inline void VGetLogString(char c, char* out, size_t size)
+{
+	snprintf(out, size, "%c", c);
+}
+inline void VGetLogString(const void* p, char* out, size_t size)
+{
+	snprintf(out, size, "%p", p);
+}
+inline void VGetLogString(const char* str, char* out, size_t size)
+{
+	snprintf(out, size, "%s", str ? str : "null");
+}
+
 
 struct VLogEntryData
 {
-	static constexpr unsigned MAX_TOKEN = 1024;
-
 	const char* mFunction;
 	const char* mFilename;
 	const char* mArgsStr;
@@ -59,44 +154,12 @@ struct VLogEntryData
 	uint32_t mThreadId; //thread id in which log occurred
 	uint32_t mClock; //clock at which log occurred
 	ELogLevel mLevel;
-	VLogToken mTokens[MAX_TOKEN];
-	unsigned mTokenCount = 0;
-	std::vector<char> mStringBuffer;
+	VLogTokenPack mTokens;
 
-	VLogEntryData()
-	{
-		mStringBuffer.reserve(4096);
-	}
-	void PushStr(const std::string& str)
-	{
-		mStringBuffer.insert(mStringBuffer.end(), str.begin(), str.end());
-	}
-	void PushChr(char chr)
-	{
-		mStringBuffer.push_back(chr);
-	}
-	void NewToken(bool bIsParam)
-	{
-		mTokens[mTokenCount].mIndex = mStringBuffer.size();
-		mTokens[mTokenCount].bIsParam = bIsParam;
-		mTokenCount++;
-		assert(mTokenCount < MAX_TOKEN);
-	}
-	void End()
-	{
-		mStringBuffer.push_back('\0');
-	}
-	void Print()
-	{
-		for (size_t i = 0; i < mTokenCount; i++)
-		{
-			const char* strToken = mStringBuffer.data() + mTokens[i].mIndex;
-			printf("[%s]\n", strToken);
-		}
-	}
+
 };
 
-inline void ZZSPrintAuto(VLogEntryData& out, const char* format)
+inline void ZZSPrintAuto(VLogTokenPack& out, const char* format)
 {
 	while (*format)
 	{
@@ -108,17 +171,27 @@ inline void ZZSPrintAuto(VLogEntryData& out, const char* format)
 		format++;
 	}
 }
-template<typename T, typename... TArgs> void ZZSPrintAuto(VLogEntryData& data, const char* format, const T& value, const TArgs&... args)
+template<typename T, typename... TArgs> void ZZSPrintAuto(VLogTokenPack& data, const char* format, const T& value, const TArgs&... args)
 {
 	while (*format)
 	{
 		if (*format == ('%'))
 		{
+			/*
+
 			data.End();
 			data.NewToken(true);
 			std::ostringstream osstr;
 			osstr << value;
 			data.PushStr(osstr.str());
+			data.End();
+
+			*/
+			data.End();
+			data.NewToken(true);
+			char itemBuffer[256];
+			VGetLogString(value, itemBuffer, sizeof(itemBuffer));
+			data.PushStr(itemBuffer);
 			data.End();
 
 
@@ -135,12 +208,14 @@ template<typename T, typename... TArgs> void ZZSPrintAuto(VLogEntryData& data, c
 }
 
 
-template<typename... TArgs> void VLogExtractData(VLogEntryData& outData, const char* format, const TArgs&... args)
+template<typename... TArgs> void VLogExtractTokens(VLogTokenPack& outTokens, const char* format, const TArgs&... args)
 {
-	outData.NewToken(false);
-	ZZSPrintAuto(outData, format, args...);
-	outData.End();
+	outTokens.NewToken(false);
+	ZZSPrintAuto(outTokens, format, args...);
+	outTokens.End();
 }
+
+void VPrintLogEntryToConsole(const VLogEntryData& data);
 
 struct VLogger
 {
@@ -162,11 +237,18 @@ if(VLogger::Get().Check(__FUNCTION__))\
 	logData.mFunction = __FUNCTION__;\
 	logData.mLineNumber = __LINE__;\
 	logData.mFilename = __FILE__;\
-	logData.mThreadId = 0;\
+	logData.mThreadId = 0; /*#TODO*/ \
 	logData.mClock = std::clock();\
 	logData.mLevel = level;\
 	logData.mArgsStr = #__VA_ARGS__;\
-	VLogExtractData(data, format, ##__VA_ARGS__);\
+	VLogExtractTokens(logData.mTokens, format, ##__VA_ARGS__);\
 	VLogger::Get().mLogs.push_back(logData);\
+	VPrintLogEntryToConsole(logData);\
 }\
+
+#define VLOG_MSG(format, ...) VLOG_BASE(ELL_Message, format, __VA_ARGS__ )
+#define VLOG_ERR(format, ...) VLOG_BASE(ELL_Error  , format, __VA_ARGS__ )
+#define VLOG_WRN(format, ...) VLOG_BASE(ELL_Warning, format, __VA_ARGS__ )
+#define VLOG_SUC(format, ...) VLOG_BASE(ELL_Success, format, __VA_ARGS__ )
+#define VLOG_DBG(format, ...) VLOG_BASE(ELL_Debug  , format, __VA_ARGS__ )
 

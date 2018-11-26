@@ -25,6 +25,8 @@ void VTest_Smart()
 	}
 	{
 		VSharedPtr<VSmartObj0> smartObj0 = new VSmartObj0;
+		VASSERT(smartObj0.IsValid());
+		
 		VArray<VSharedPtr<VSmartObj0>> objects;
 		objects.Add(smartObj0);
 		objects.Add(smartObj0);

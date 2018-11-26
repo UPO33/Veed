@@ -1,18 +1,21 @@
 #include "../Core/VLogger.h"
+#include <windows.h>
+#include <iostream>
 
 void VTest_Log()
 {
-	VLogEntryData data;
-	VLogExtractData(data, "object % created at %%%", "myObject", 10, 20, 30);
-	data.Print();
-	VLogEntryData data2;
-	VLogExtractData(data2, "object created");
-	data2.Print();
-	assert(1);
+	//VLogTokenPack data;
+	//
+	//VLogExtractTokens(data, "object % created at %%% ok? % addr:%", "myObject", 10, 20, 30, true, (void*)(0xFFffFF));
+	//data.Print();
+	//
+	//VLogTokenPack data2;
+	//VLogExtractTokens(data2, "object created");
+	//data2.Print();
+	//
 
-	VLOG_BASE(ELL_Message, "object % created at % % %", "object0", 10, 20, 30);
-	VLOG_BASE(ELL_Message, "object % created at % % %", "object0", 10, 20, 30);
+	VLOG_MSG("object % created at % % %", "object0", 10, 20, 30);
+	VLOG_SUC("object % created at % % %", "object0", 10, 20, 30);
+	VLOG_WRN("object % created at % % %", "object0", 10, 20, 30);
 
-	std::string dumpStr;
-	VLogger::Get().DumpString(dumpStr);
 }

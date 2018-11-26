@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 
 project(Veed)
 
+
 #option(UCORE_BUILD_SHARED "dll or static" ON)
 #option(UENGINE_BUILD_SHARED "dll or static?" ON)
 #option(UGFXDIRECTX_BUILD_SHARED "" ON)
@@ -69,12 +70,16 @@ file(GLOB_RECURSE HEADERS_Core "Src/Core/*.h")
 file(GLOB_RECURSE SOURCES_CoreTest "Src/CoreTest/*.cpp")
 file(GLOB_RECURSE HEADERS_CoreTest "Src/CoreTest/*.h")
 
+file(GLOB_RECURSE SOURCES_NetTest "Src/NetTest/*.cpp")
+file(GLOB_RECURSE HEADERS_NetTest "Src/NetTest/*.h")
+
+file(GLOB_RECURSE HEADERS_ImGui "Src/ImGui/*.h")
+file(GLOB_RECURSE SOURCES_ImGui "Src/ImGui/*.cpp")
 
 
 add_library(VCore STATIC
 ${SOURCES_Core} 
 ${HEADERS_Core} )
-
 
 
 
@@ -84,3 +89,6 @@ ${HEADERS_CoreTest}
 )
 target_link_libraries(VCoreTest VCore)
 #AdjustTargetDebugWorkingDir(VCoreTest)
+
+add_executable(VNetTest ${SOURCES_NetTest} ${HEADERS_NetTest} ${HEADERS_ImGui} ${SOURCES_ImGui})
+target_link_libraries(VNetTest VCore)
