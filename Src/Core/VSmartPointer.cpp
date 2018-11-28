@@ -3,9 +3,9 @@
 
 VWeakRefrenceData* gNullWeakRefrence = nullptr;
 
-FreeListAllocator* VGetWeakRefrenceDataAllocator()
+VFreeListAllocator* VGetWeakRefrenceDataAllocator()
 {
-	static FreeListAllocator Ins(sizeof(VWeakRefrenceData), 512);
+	static VFreeListAllocator Ins(sizeof(VWeakRefrenceData), 512);
 	return &Ins;
 }
 

@@ -54,6 +54,7 @@ void VTes_BitSteam()
 	VASSERT(memcmp(writer0.GetBytes(), rewite.GetBytes(), writer0.Seek() / 8) == 0);
 
 
+
 	printf("");
 	
 }

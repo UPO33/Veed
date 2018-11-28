@@ -14,7 +14,7 @@ void VTest_Log()
 	//data2.Print();
 	//
 
-	VLOG_MSG("object % created at % % %", "object0", 10, 20, 30);
+	VLOG_MSG("%object % created at % % %", VlogIndent(3), "object0", 10, 20, 30);
 	VLOG_SUC("object % created at % % %", "object0", 10, 20, 30);
 	VLOG_WRN("object % created at % % %", "object0", 10, 20, 30);
 

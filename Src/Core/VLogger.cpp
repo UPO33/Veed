@@ -165,10 +165,72 @@ inline ELogColor VLogGetLevelColor(ELogLevel level)
 	return ELC_HiWhite;
 }
 
+void VGetLogString(VlogIndent indent, char* out, size_t size)
+{
+	indent.mIndent *= 2;
+	for (int i = 0; i < indent.mIndent; i++)
+		out[i] = ' ';
+
+	out[indent.mIndent] = 0;
+}
+
+void VGetLogString(const char* str, char* out, size_t size)
+{
+	snprintf(out, size, "%s", str ? str : "null");
+}
+
+void VGetLogString(const void* p, char* out, size_t size)
+{
+	snprintf(out, size, "%p", p);
+}
+
+void VGetLogString(char c, char* out, size_t size)
+{
+	snprintf(out, size, "%c", c);
+}
+
+void VGetLogString(unsigned i, char* out, size_t size)
+{
+	snprintf(out, size, "%u", i);
+}
+void VGetLogString(unsigned long long i, char* out, size_t size)
+{
+	snprintf(out, size, "%llu", i);
+}
+void VGetLogString(double d, char* out, size_t size)
+{
+	snprintf(out, size, "%f", d);
+}
+
+void VGetLogString(int i, char* out, size_t size)
+{
+	snprintf(out, size, "%d", i);
+}
+
+void VGetLogString(bool b, char* out, size_t size)
+{
+	snprintf(out, size, "%s", b ? "true" : "false");
+}
+
 void VPrintLogEntryToConsole(const VLogEntryData& data)
 {
 	VConsoleSetColor(ELC_Black, VLogGetLevelColor(data.mLevel));
-	std::cout <<  data.mFunction << std::setw(29);
+
+	//print function
+	{
+		bool bReachedZero = false;
+		for (size_t i = 0; i < 22; i++)
+		{
+			if (data.mFunction[i] == 0)
+				bReachedZero = true;
+
+			std::cout << (bReachedZero ? ' ' : data.mFunction[i]);
+		}
+		std::cout << "  ";
+	}
+
+	//std::cout << data.mFunction << std::setw(20);
+	//std::cout << data.mFunction <<  "  ";
 
 	for (int i = 0; i < data.mTokens.mTokenCount; i++)
 	{
@@ -179,6 +241,7 @@ void VPrintLogEntryToConsole(const VLogEntryData& data)
 		const VLogToken& tk = data.mTokens.mTokens[i];
 		VConsoleSetColor(ELC_Black, tk.mIsParam ? ELC_HiGreen : ELC_HiWhite);
 		std::cout << str;
+		std::setw(0);
 		
 	}
 	VConsoleSetColor(ELC_Black, ELC_HiWhite);

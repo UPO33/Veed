@@ -113,37 +113,21 @@ struct VLogTokenPack
 	void Print() const;
 };
 
-
+struct VlogIndent
+{
+	int mIndent;
+	explicit VlogIndent(int indent) : mIndent(indent) {}
+};
 //////////////////////////////////////////////////////////////////////////
-inline void VGetLogString(bool b, char* out, size_t size )
-{
-	snprintf(out, size, "%s", b ? "true" : "false");
-}
-inline void VGetLogString(int i, char* out, size_t size)
-{
-	snprintf(out, size, "%d", i);
-}
-inline void VGetLogString(double d, char* out, size_t size)
-{
-	snprintf(out, size, "%f", d);
-}
-inline void VGetLogString(unsigned i, char* out, size_t size)
-{
-	snprintf(out, size, "%u", i);
-}
-inline void VGetLogString(char c, char* out, size_t size)
-{
-	snprintf(out, size, "%c", c);
-}
-inline void VGetLogString(const void* p, char* out, size_t size)
-{
-	snprintf(out, size, "%p", p);
-}
-inline void VGetLogString(const char* str, char* out, size_t size)
-{
-	snprintf(out, size, "%s", str ? str : "null");
-}
-
+void VGetLogString(bool b, char* out, size_t size );
+void VGetLogString(int i, char* out, size_t size);
+void VGetLogString(double d, char* out, size_t size);
+void VGetLogString(unsigned i, char* out, size_t size);
+void VGetLogString(unsigned long long i, char* out, size_t size);
+void VGetLogString(char c, char* out, size_t size);
+void VGetLogString(const void* p, char* out, size_t size);
+void VGetLogString(const char* str, char* out, size_t size);
+void VGetLogString(VlogIndent indent, char* out, size_t size);
 
 struct VLogEntryData
 {

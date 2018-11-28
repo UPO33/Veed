@@ -81,6 +81,34 @@ template<typename TElement, typename TIndex> void VArrayReverse(TElement* elemen
 		elements[iIndex] = temp;
 	}
 }
+template<typename TElement> int VArrayFindFirst(const TElement* elements, int length, const TElement& search)
+{
+	for (int i = 0; i < length; i++)
+	{
+		if (elements[i] == search)
+			return i;
+	}
+	return -1;
+}
+template<typename TElement> int VArrayFindFirstRev(const TElement* elements, int length, const TElement& search)
+{
+	for (int i = length - 1; i >= 0; i--)
+	{
+		if (elements[i] == search)
+			return i;
+	}
+	return -1;
+}
+template<typename TElement> int VArrayFindLast(const TElement* elements, int length, const TElement& search)
+{
+	int iLast = -1;
+	for (int i = 0; i < length; i++)
+	{
+		if (elements[i] == search)
+			iLast = i;
+	}
+	return iLast;
+}
 #pragma  endregion
 
 
@@ -166,9 +194,9 @@ public:
 	//must be always valid
 	Header* mHeader;
 
-	
-	size_t Length() const { return mHeader->mLength; }
-	size_t Capacity() const { return mHeader->mCapacity; }
+
+	int Length() const { return mHeader->mLength; }
+	int Capacity() const { return mHeader->mCapacity; }
 	bool IsIndexValid(int index) const { return index >= 0 && index <= Length(); }
 
 	TElement* Elements() { return (TElement*)mHeader->mItems; }
@@ -264,7 +292,7 @@ public:
 
 			auto pNewHeader = (Header*)ReallocMemory(mHeader, newCapacity);
 			VASSERT(pNewHeader);
-			
+
 			pNewHeader->mLength = mHeader->mLength;
 			pNewHeader->mCapacity = newCapacity;
 
@@ -275,9 +303,22 @@ public:
 	{
 		VArrayRemoveAtSwap(mHeader->mItems, mHeader->mLength, index);
 	}
-	void RemoveShift(int index, int count = 1)
+	void RemoveAtShift(int index, int count = 1)
 	{
 		VArrayRemoveShift(mHeader->mItems, mHeader->mLength, index, count);
+	}
+	//find the first specified element and remove it by shifting array.
+	int RemoveFirstShift(const TElement& item)
+	{
+		auto index = FindFirst(item);
+		if (index != -1) RemoveAtShift(index);
+		return index;
+	}
+	int RemoveFirstSwap(const TElement& item)
+	{
+		auto index = FindFirst(item);
+		if (index != -1) RemoveAtSwap(index);
+		return index;
 	}
 	template<typename TLambda> void ConditionalRemovePOD(const TLambda& proc)
 	{
@@ -358,24 +399,10 @@ public:
 		}
 		mHeader->mLength = 0;
 	}
-	int FindFirst(const TElement& item) const
-	{
-		for (int i = 0; i < mHeader->mLength; i++)
-		{
-			if (mHeader->mItems[i] == item)
-				return i;
-		}
-		return -1;
-	}
-	int FindFirstRev(const TElement& item)
-	{
-		for (int i = mHeader->mLength - 1; i >= 0; i--)
-		{
-			if (mHeader->mItems[i] == item)
-				return i;
-		}
-		return -1;
-	}
+
+	int FindFirst(const TElement& item) const { return VArrayFindFirst(Elements(), mHeader->mLength, item); }
+	int FindFirstRev(const TElement& item) const { return VArrayFindFirstRev(Elements(), mHeader->mLength, item); }
+	int FindLast(const TElement& item) const { return VArrayFindLast(Elements(), mHeader->mLength, item); }
 
 	class Iter
 	{
@@ -420,5 +447,180 @@ private:
 	inline static Header* GetEmptyHeader()
 	{
 		return (Header*)&VVArrayHeader::EmptyInstance;
+	}
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////
+template<typename TElement, unsigned MaxElement> struct alignas(TElement) VStackArray
+{
+	union 
+	{
+		TElement mELements[MaxElement];
+	};
+	int mLength = 0;
+
+	int Length() const { return mLength; }
+	static int Capacity() { return MaxElement; }
+
+	//default constructor
+	VStackArray()
+	{}
+	//copy constructor
+	template<unsigned CopyMaxElement> VStackArray(const VStackArray<TElement, CopyMaxElement>& copy)
+	{
+		VASSERT(copy.mLength <= MaxElement);
+		
+		Append(copy.Elements(), copy.Length());
+	}
+	//copy from raw array
+	VStackArray(const TElement* copy, int count)
+	{
+		VASSERT(copy.mLength <= count);
+		
+		Append(copy.Elements(), copy.Length());
+	}
+
+	//destructor
+	~VStackArray(){ Reset(); }
+	
+	void Reset()
+	{
+		for (int i = 0; i < mLength; i++)
+			Elements()[i].~TElement();
+		mLength = 0;
+	}
+	void Empty() { Reset(); }
+
+	bool IsIndexValid(int index) const { return index >= 0 && index <= Length(); }
+	TElement* Elements() { return (TElement*)&mELements[0]; }
+	const TElement* Elements() const { return (const TElement*)&mELements[0]; }
+
+	TElement& First(int index = 0) { return Elements()[index]; }
+	const TElement& First(int index = 0) const { return Elements()[index]; }
+
+	TElement& Last(int index = 0) { return Elements()[mLength - 1 - index]; }
+	const TElement& Last(int index = 0) const { return Elements()[mLength - 1 - index]; }
+
+	const TElement& operator [] (size_t index) const { return First(index); }
+	TElement& operator [] (size_t index) { return First(index); }
+
+	int Avail() const { return MaxElement - mLength; }
+
+
+
+	int AddUninitilized(int count = 1)
+	{
+		VASSERT(Avail() >= count);
+		auto ret = mLength;
+		mLength += count;
+		return ret;
+	}
+	int AddZeroed(int count = 1)
+	{
+		VASSERT(Avail() >= count);
+		VMemZero(Elements() + mLength, sizeof(TElement) * count);
+
+		auto ret = mLength;
+		mLength += count;
+		return ret;
+	}
+	//adds an element at the end of array
+	template<typename... TArgs> size_t Add(TArgs... args)
+	{
+		VASSERT(Avail() >= 1);
+		new (Elements() + mLength) TElement(args...);
+		return mLength++;
+	}
+	//
+	void RemoveAtSwap(int index)
+	{
+		VArrayRemoveAtSwap(Elements(), mLength, index);
+	}
+	void RemoveAtShift(int index, int count = 1)
+	{
+		VArrayRemoveShift(Elements(), mLength, index, count);
+	}
+	//find the first specified element and remove it by shifting array.
+	int RemoveFirstShift(const TElement& item)
+	{
+		index = FindFirst(item);
+		if (index != -1) RemoveAtShift(index);
+		return index;
+	}
+	int RemoveFirstSwap(const TElement& item)
+	{
+		index = FindFirst(item);
+		if (index != -1) RemoveAtSwap(index);
+		return index;
+	}
+	template<typename TLambda> void ConditionalRemovePOD(const TLambda& proc)
+	{
+		VArrayConditionalRemovePOD(Elements(), mLength, proc);
+	}
+	template<typename TLambda> void ConditionalRemove(const TLambda& proc)
+	{
+		VArrayConditionalRemove(Elements(), mLength, proc);
+	}
+	void Reverse()
+	{
+		VArrayReverse(Elements(), mLength);
+	}
+	//
+	int AddUnique(const TElement& item)
+	{
+		auto index = FindFirst(item);
+		if (index == -1)
+			index = Add(item);
+		return index;
+	}
+	//
+	void AppendUnique(const TElement* elements, int numElement)
+	{
+		if (elements == nullptr) return;
+
+		for (size_t i = 0; i < numElement; i++)
+			AddUnique(elements[i]);
+	}
+	//
+	void Append(const TElement* elements, int count)
+	{
+		auto start = AddUninitilized(count);
+		for (int i = 0; i < count; i++)
+		{
+			new (Elements() + (start + i)) TElement(elements[i]);
+		}
+	}
+	//
+	void AppendMove(const TElement* elements, int count)
+	{
+		auto start = AddUninitilized(count);
+		for (int i = 0; i < count; i++)
+		{
+			new (Elements() + (start + i)) TElement(std::move(elements[i]));
+		}
+	}
+	//remove an element from the end of array and calls dtor
+	void Pop()
+	{
+		VASSERT(Length() > 0);
+		mLength--;
+		(Elements() + mLength)->~TElement();
+	}
+	void PopN(int count)
+	{
+		VASSERT(count <= Length());
+		for (int i = 0; i < count; i++)
+		{
+			(Elements() + (mLength - 1 - i))->~TElement();
+		}
+		mLength -= count;
+	}
+	void Pop(TElement& out)
+	{
+		VASSERT(Length() > 0);
+		mLength--;
+		out = std::move(mHeader->mItems[mLength]);
 	}
 };

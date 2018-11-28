@@ -4,21 +4,21 @@
 /*
 only grows and the allocated memory for the chunks will be freed by DTor or Destroy()
 */
-class FreeListAllocator
+class VFreeListAllocator
 {
 public:
-	FreeListAllocator(const FreeListAllocator&) = delete;
-	FreeListAllocator& operator = (const FreeListAllocator&) = delete;
+	VFreeListAllocator(const VFreeListAllocator&) = delete;
+	VFreeListAllocator& operator = (const VFreeListAllocator&) = delete;
 
-	FreeListAllocator()
+	VFreeListAllocator()
 		: mChunkHead(nullptr), mFirstFree(nullptr), mElementSize(0), mNumElementInChunk(0) {}
 
-	FreeListAllocator(int elementSize, int numElementInChunk)
+	VFreeListAllocator(int elementSize, int numElementInChunk)
 		: mChunkHead(nullptr), mFirstFree(nullptr), mElementSize(0), mNumElementInChunk(0)
 	{
 		Reset(elementSize, numElementInChunk);
 	}
-	~FreeListAllocator() { Destroy(); }
+	~VFreeListAllocator() { Destroy(); }
 
 	void*	Alloc();
 	//make sure that ptr allocated using this allocator, no debugging is available currently
@@ -72,16 +72,16 @@ private:
 /*
 only allocates and grows. the allocated memories will be released all by DTor or Destroy()
 */
-class LinearAllocator
+class VLinearAllocator
 {
 public:
-	LinearAllocator(const LinearAllocator&) = delete;
-	LinearAllocator& operator = (const LinearAllocator&) = delete;
+	VLinearAllocator(const VLinearAllocator&) = delete;
+	VLinearAllocator& operator = (const VLinearAllocator&) = delete;
 
-	LinearAllocator() : mCurrentSeek(0), mCurrentEnd(0), mChunkSize(0), mChunkHead(nullptr) {}
-	LinearAllocator(size_t chunkSize) : mCurrentSeek(0), mCurrentEnd(0), mChunkSize(0), mChunkHead(nullptr) { Reset(chunkSize); }
+	VLinearAllocator() : mCurrentSeek(0), mCurrentEnd(0), mChunkSize(0), mChunkHead(nullptr) {}
+	VLinearAllocator(size_t chunkSize) : mCurrentSeek(0), mCurrentEnd(0), mChunkSize(0), mChunkHead(nullptr) { Reset(chunkSize); }
 
-	~LinearAllocator() { Destroy(); }
+	~VLinearAllocator() { Destroy(); }
 
 	void*	Alloc(size_t size, size_t align = sizeof(void*));
 	void	Reset(size_t chunkSize);

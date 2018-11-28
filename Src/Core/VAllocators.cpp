@@ -2,17 +2,17 @@
 #include "VMemory.h"
 
 //////////////////////////////////////////////////////////////////////////
-void*& FreeListAllocator::ChunkGetNext(const void* chunk) const
+void*& VFreeListAllocator::ChunkGetNext(const void* chunk) const
 {
 	return *((void**)(((size_t)chunk) + mElementSize * mNumElementInChunk + sizeof(void*)));
 }
 
-void* FreeListAllocator::AllocChunk() const
+void* VFreeListAllocator::AllocChunk() const
 {
 	return VMemAllocAligned(mElementSize * mNumElementInChunk + sizeof(void*), VCACHE_ALIGN);
 }
 
-void FreeListAllocator::FreeChunkElements(void* chunkElements)
+void VFreeListAllocator::FreeChunkElements(void* chunkElements)
 {
 	for (int i = mNumElementInChunk - 1; i >= 0; i--)
 	{
@@ -22,7 +22,7 @@ void FreeListAllocator::FreeChunkElements(void* chunkElements)
 	}
 }
 
-void FreeListAllocator::AddNewChunk()
+void VFreeListAllocator::AddNewChunk()
 {
 	void* newChunk = AllocChunk();
 	FreeChunkElements(newChunk);
@@ -30,14 +30,14 @@ void FreeListAllocator::AddNewChunk()
 	mChunkHead = newChunk;
 }
 
-void FreeListAllocator::DebugCheckFree(void* memory)
+void VFreeListAllocator::DebugCheckFree(void* memory)
 {
 	//#TODO: check whether 'memory' is allocated and belongs to this allocator
 
 	VASSERT(memory);
 }
 
-void FreeListAllocator::Reset(int elementSize, int numElementInChunk)
+void VFreeListAllocator::Reset(int elementSize, int numElementInChunk)
 {
 	VASSERT(elementSize >= sizeof(void*));	//because of Elem.mNextFree
 	VASSERT(numElementInChunk > 0);
@@ -47,7 +47,7 @@ void FreeListAllocator::Reset(int elementSize, int numElementInChunk)
 	mNumElementInChunk = numElementInChunk;
 }
 
-void* FreeListAllocator::Alloc()
+void* VFreeListAllocator::Alloc()
 {
 	VASSERT(mElementSize && mNumElementInChunk);
 
@@ -58,7 +58,7 @@ void* FreeListAllocator::Alloc()
 	return tmp;
 }
 
-void FreeListAllocator::Free(void* ptr)
+void VFreeListAllocator::Free(void* ptr)
 {
 	DebugCheckFree(ptr);
 
@@ -67,7 +67,7 @@ void FreeListAllocator::Free(void* ptr)
 	mFirstFree = elem;
 }
 
-void FreeListAllocator::FreeAll()
+void VFreeListAllocator::FreeAll()
 {
 	mFirstFree = nullptr;
 
@@ -79,7 +79,7 @@ void FreeListAllocator::FreeAll()
 	}
 }
 
-void FreeListAllocator::Destroy()
+void VFreeListAllocator::Destroy()
 {
 	void* chunk = mChunkHead;
 	while (chunk)
@@ -93,7 +93,7 @@ void FreeListAllocator::Destroy()
 	mFirstFree = nullptr;
 }
 
-void* LinearAllocator::Alloc(size_t size, size_t align)
+void* VLinearAllocator::Alloc(size_t size, size_t align)
 {
 	VASSERT(size && align);
 	VASSERT(size < mChunkSize);
@@ -120,13 +120,13 @@ void* LinearAllocator::Alloc(size_t size, size_t align)
 	}
 }
 
-void LinearAllocator::Reset(size_t chunkSize)
+void VLinearAllocator::Reset(size_t chunkSize)
 {
 	Destroy();
 	mChunkSize = chunkSize;
 }
 
-void LinearAllocator::Destroy()
+void VLinearAllocator::Destroy()
 {
 	Chunk* iter = mChunkHead;
 	while (iter)

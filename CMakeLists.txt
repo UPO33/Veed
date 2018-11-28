@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 project(Veed)
 
 
+
 #option(UCORE_BUILD_SHARED "dll or static" ON)
 #option(UENGINE_BUILD_SHARED "dll or static?" ON)
 #option(UGFXDIRECTX_BUILD_SHARED "" ON)

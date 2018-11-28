@@ -4,9 +4,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 //base class for serialization
-class VArchiveBase
+struct VArchiveBase
 {
-protected:
 	uint8_t* mBytes;
 	size_t mSeek;
 	size_t mCapacity;
@@ -14,7 +13,6 @@ protected:
 	bool mIsValid;
 	bool mOwnsMemory;
 
-public:
 	bool IsValid() const { return mIsValid; }
 	bool IsSaving() const { return mIsSaving; }
 	size_t Avail() const { return mCapacity - mSeek; }
@@ -59,9 +57,8 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class VArchiveByteWriter : public VArchiveBase
+struct VArchiveByteWriter :  VArchiveBase
 {
-public:
 	//default constructor
 	VArchiveByteWriter(size_t initialCapacity = 0);
 	//copy constructor
@@ -76,9 +73,8 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-template<size_t SizeInByte> class VArchiveByteWriterStack : public VArchiveByteWriter
+template<size_t SizeInByte> struct VArchiveByteWriterStack : VArchiveByteWriter
 {
-public:
 	VArchiveByteWriterStack()
 	{
 		mCapacity = SizeInByte;

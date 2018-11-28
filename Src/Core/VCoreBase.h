@@ -90,7 +90,7 @@ it doesn't take the parent's class functions into account
 	}; \
 	template<typename T> struct Z_##DeclarationName##HasFunc\
 	{\
-		using TFunc = ReturnType (UCore::Void::*) (__VA_ARGS__);\
+		using TFunc = ReturnType (VVoid::*) (__VA_ARGS__);\
 		struct FakeType { ReturnType FunctionName(__VA_ARGS__) { return exit(0); } };\
 		struct FakeT { static bool const value = 0; };\
 		static bool const value = std::conditional<std::is_class<T>::value, Z_##DeclarationName##HasFuncChecker<T>, FakeT>::type::value;\
@@ -233,3 +233,17 @@ inline float VRandFloat(float min, float max) { return VLerp(min, max, VRandFrac
 //e.g TT_IsSpecialization<TArray, TArray<int>>::value === true
 template <class T, template <class...> class Template> struct TT_IsSpecialization : std::false_type {};
 template <template <class...> class Template, class... Args> struct TT_IsSpecialization<Template<Args...>, Template> : std::true_type {};
+
+////////////////////////////////////////////////////////////////////TT_IsMetaClass
+template <class Type> struct ZZ_Has_ZZIsMeta
+{
+	template <typename T, T> struct TypeCheck;
+	template <typename T> struct FuncCheck { typedef void (T::*fptr)(); };
+	template <typename T> static char HasFunc(TypeCheck< typename FuncCheck<T>::fptr, &T::ZZIsMeta >*);
+	template <typename T> static long  HasFunc(...);
+	static bool const value = (sizeof(HasFunc<Type>(0)) == sizeof(char));
+};
+//checks whether T is meta class or not
+template<typename T> struct TT_IsMetaClass : std::conditional<std::is_class<T>::value, ZZ_Has_ZZIsMeta<T>, std::false_type>::type
+{
+};

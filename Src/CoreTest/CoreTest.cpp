@@ -10,11 +10,14 @@
 
 void MainGuarded()
 {
+	VRUN_TEST(VTest_Meta);
+	VRUN_TEST(VTest_Name);
 	VRUN_TEST(VTest_Array);
 	VRUN_TEST(VTest_Log);
 	VRUN_TEST(VTest_Serializer);
 	VRUN_TEST(VTest_Smart);
 	VRUN_TEST(VTes_BitSteam);
+	
 
 	//VTest_Guard();
 }

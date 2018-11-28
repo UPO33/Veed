@@ -1,22 +1,53 @@
 #pragma once
 
 #include "VNetSocket.h"
+#include "../Core/VNetBitStream.h"
+#include "../Core/VLogger.h"
+#include "../Core/VArray.h"
 
+//////////////////////////////////////////////////////////////////////////
 struct VNetId
 {
-	uint32_t mId;
+	uint32_t mId = 0;
 
 	bool IsNull() const { return mId == 0; }
-	bool IsStatic() const { return mId & 1; }
 };
 
+inline VBitStream& operator << (VBitStream& stream, VNetId& id)
+{
+	stream.RWNumerBytePacked(id.mId);
+	return stream;
+}
+
+//per application static object, for things like class, asset
+struct VNetStaticEntity
+{
+};
+//
+struct VNetAsset : VNetStaticEntity
+{
+};
+//an instance of this holds the list of static object 
+//items must be registered in the same order and number in both sides
+struct VNetAppCache
+{
+	//read class id from the stream and searchs it
+	VNetClassInfo* ReadClass(VBitStream& stream) const;
+	VNetAsset* ReadAsset(VBitStream& stream) const;
+
+	void RegClass(VNetClassInfo* pClass);
+	void RegAsset(VNetAsset* pAsset);
+
+	VArray<VNetClassInfo*> mClasses;
+	VArray<VNetAsset*> mAssets;
+};
 
 struct VNetIdCache
 {
 	uint32_t mIdCounter = 0;
+
 	//create a new unique id. server only.
-	//the created id must be sent to clients asap
-	VNetId CreateNewId(const void* value)
+	VNetId CreateNewId(VNetObject* pObject)
 	{
 		mIdCounter++;
 	}
@@ -76,6 +107,7 @@ struct VNetObject
 	bool IsDedicatedServer() const {}
 	bool IsListenServer() const {}
 	bool IsClient() const {}
+	void ClientDestroy() {}
 };
 //////////////////////////////////////////////////////////////////////////
 struct VNetObject_TestPlant : VNetObject
@@ -120,12 +152,22 @@ struct VNetObject_TestPlant : VNetObject
 
 struct VPacketHeader
 {
-	uint32_t mProto : 4;
+	uint32_t mProto : 3;
 	uint32_t mSeq : 9;
 	uint32_t mAck : 9;
-	uint32_t mUnrelliable : 10;
-	uint32_t mReliableUnordered : 10;
-	uint32_t mReliable : 10;
+	uint32_t mUnrelliableSize : 10;
+	uint32_t mReliableUnorderedSize : 10;
+	uint32_t mReliableSize : 10;
+};
+struct VPacketExtracted
+{
+	uint8_t  mChannelsBuffer[3][0xFFf];
+	uint32_t mChannelsSize[3];
+
+	VPacketExtracted(VBitStream& stream)
+	{
+
+	}
 };
 
 struct VNetPacket
@@ -166,6 +208,7 @@ struct VNetConnection
 
 	VNetWorld* mWorld = nullptr;
 	VNetIdCache* mCache = nullptr;
+	VNetAppCache* mAppCache = nullptr;
 
 	//replication data of an object
 	struct VRepObject
@@ -173,6 +216,9 @@ struct VNetConnection
 		uint64_t mCaptureTime;
 		VNetObject* mObject;
 		VBitWriter mData;
+		VArray<VNetObject*> mRefrencedobjects;
+		//whether its the first spawn or not
+		bool bIsInitial;
 	};
 	//replication of a world for a client
 	struct VRepCapture
@@ -181,8 +227,18 @@ struct VNetConnection
 		VNetConnection* mTargetClient; //client qw want to send data to
 		VArray<VRepObject> mObjects;
 	};
+	struct VDestructionPack
+	{
+		//list of destroyed objects
+		VArray<VNetObject*> mObjects;
+		VBitWriter mSerializedData;
+	};
 	
+	
+	void ServerMakeDestructionIdPack()
+	{
 
+	}
 	void ServerReplicateObject()
 	{
 		//for each client
@@ -215,14 +271,54 @@ struct VNetConnection
 
 		}
 	}
-	void ClientHandleReplicationPack(VBitStream& packet)
+	//////////////////////////////////////////////////////////////////////////
+	int ClientHandleDestructionPack(VBitStream& packet)
 	{
+		uint32_t count = 0;
+		packet.RWNumerBytePacked(count);
+		if (packet.IsValid())
+			return -1;
+
 		int numHandled = 0;
-		while (packet.IsValid() && packet.Avail())
+
+		for (uint32_t i = 0; i < count; i++)
+		{
+			VNetId netId;
+			packet << netId;
+
+			if (netId.IsNull() || !packet.IsValid())
+				return -1;
+
+			if (VNetObject* pObject = mCache->FindObject(netId))
+			{
+				pObject->ClientDestroy();
+				numHandled++;
+			}
+			else
+			{
+				VLOG_ERR("object not found for VNetId %", netId);
+			}
+
+		}
+	}
+	//////////////////////////////////////////////////////////////////////////
+	int ClientHandleReplicationPack(VBitStream& packet)
+	{
+		uint32_t count = 0;
+		packet.RWNumerBytePacked(count);
+		if (!packet.IsValid())
+			return -1;
+
+		int numHandled = 0;
+
+		for (uint32_t i = 0; i < count; i++)
 		{
 			VNetId objectId;
 			packet << objectId;
 
+			if (!packet.IsValid() || objectId.IsNull())
+				return -1;
+			
 			if (VNetObject* pObject = mCache->FindObject(objectId))
 			{
 				pObject->OnReplicate(nullptr, packet);
@@ -230,9 +326,56 @@ struct VNetConnection
 			}
 			else
 			{
-				//object id not found
+				VLOG_ERR("object not found for NetId %. we can't continue the parsing and drop the packet.", objectId);
+				return -1;
 			}
 		}
+
+		return numHandled;
+	}
+	//////////////////////////////////////////////////////////////////////////
+	int ClientHandleSpawnPack(VBitStream& packet)
+	{
+		int numCreated = 0;
+		while (packet.IsValid() && packet.Avail())
+		{
+			VNetId id;
+			packet << id;
+
+			
+			if (mCache->FindObject(id))
+			{
+				VLOG_ERR("netid already exist");
+				return numCreated;
+			}
+
+			VNetClassInfo* pClass = mAppCache->ReadClass(packet);
+			if (pClass)
+			{
+				VNetObject* pObj = pClass->NewObject();
+				pObj->mId = id;
+				pObj->OnReplicate(packet);
+			}
+
+
+			numCreated++;
+		}
+		return numCreated;
+	}
+	void ServerGenerateSpawnPack(VArray<VRepObject*> out)
+	{
+		//for(int i = 0; i < mWorld->mPendingReplicateSpawn.Length(); i++)
+		//{
+		//	VNetObject* pObject = mWorld->mPendingReplicateSpawn[i];
+		//	if (pObject && pObject->mId.IsNull())
+		//	{
+		//		VRepObject* pNewRep = new VRepObject();
+		//		pNewRep->mObject = pObject;
+		//		pNewRep->mCaptureTime = this->CurrentRealTime();
+		//		pObject->IsReplicationRelevant()
+		//	}
+		//}
+
 	}
 	/*
 	What TCP does is maintain a sliding window where the ack sent is the sequence number of the next packet
@@ -284,6 +427,40 @@ struct VNetConnection
 	{
 
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void ClientChannelGotData(VBitStream& channelData)
+	{
+		if (ClientHandleDestructionPack(channelData) == -1)
+			return;
+
+		if (ClientHandleSpawnPack(channelData) == -1)
+			return;
+
+		if (ClientHandleReplicationPack(channelData) == -1)
+			return;
+		
+	}
+
+
+
+
+
+	void ServerHandleChanelRead(VBitStream& channelData)
+	{
+		channelData.
+	}
+	void ServerHandleReadUDP(VBitStream& packet)
+	{
+		VPacketHeader header;
+		header << packet;
+
+		uint8_t unreliableBuffer[0xFFf];
+
+		packet.RWBits(unreliableBuffer, 0, header.mUnrelliableSize);
+		
+		
+	}
 	void TickServer()
 	{
 		if (!mIsInitilized) return;
@@ -299,6 +476,7 @@ struct VNetConnection
 			VNetConnection* pSenderConnection = FindConnection(sender);
 			if (pSenderConnection)
 			{
+				VBitReader packetReader(mRecvBuffer, byteRecv);
 			}
 		}
 
@@ -349,7 +527,10 @@ struct VNetConnection
 
 struct VNetWorld
 {
+	//all object in the world
 	VArray<VNetObject*> mObjects;
+	//object that has been spawned but not replicated to clients yet
+	VArray<VNetObject*> mPendingReplicateSpawn;
 	VNetPlayer* mPlayer;
 
 
