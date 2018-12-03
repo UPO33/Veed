@@ -16,7 +16,6 @@ struct VObject
 
 	VObject()
 	{
-
 	}
 
 	virtual void OnPostPropertyChange() {}

@@ -10,6 +10,7 @@
 
 void MainGuarded()
 {
+	VRUN_TEST(VTest_Queue);
 	VRUN_TEST(VTest_Meta);
 	VRUN_TEST(VTest_Name);
 	VRUN_TEST(VTest_Array);

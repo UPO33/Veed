@@ -1,0 +1,2 @@
+external comment of classes, properties , etc comes here
+we can implement different type of file for comments. ini, html, txt, ..
