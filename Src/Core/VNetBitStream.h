@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include "VCoreBase.h"
 
 void VBitCopy(void* __restrict dst, size_t dstOffset, const void* __restrict src, size_t srcOffset, size_t bitCount);
 

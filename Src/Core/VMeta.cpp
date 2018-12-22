@@ -15,7 +15,8 @@ VName VGetTypeidNameFixed(const std::type_info& ti)
 #else
 	int status = 0;
 	char output_buffer[4096];
-	char* demangledName = abi::__cxa_demangle(typeid(TClass).name(), output_buffer, 4096, &status);
+	size_t len = 4096;
+	char* demangledName = abi::__cxa_demangle(ti.name(), output_buffer, &len, &status);
 	VASSERT(status == 0);
 #endif
 

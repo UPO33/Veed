@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #include <windows.h>
 #include "../Core/VLogger.h"
 
@@ -53,3 +54,4 @@ void VTest_Guard()
 		system("pause");
 	}
 }
+#endif // _DEBUG

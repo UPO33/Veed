@@ -2,30 +2,40 @@
 #include "VMemory.h"
 #include "VCoreBase.h"
 
+
 void VBitCopy(void* dst, size_t dstOffset, const void* src, size_t srcOffset, size_t bitCount)
 {
 	uint8_t* pDst = (uint8_t*)dst;
 	const uint8_t* pSrc = (const uint8_t*)src;
 
+
+	//uint8_t(1u << 7u),
+	//uint8_t(1u << 6u),
+	//uint8_t(1u << 5u),
+	//uint8_t(1u << 4u),
+	//uint8_t(1u << 3u),
+	//uint8_t(1u << 2u),
+	//uint8_t(1u << 1u),
+	//uint8_t(1u)
 	static const uint8_t BitRevs[8] = {
-		1 << 7,
-		1 << 6,
-		1 << 5,
-		1 << 4,
-		1 << 3,
-		1 << 2,
-		1 << 1,
+		128,
+		64,
+		32,
+		16,
+		8,
+		4,
+		2,
 		1
 	};
 	static const uint8_t BitRevsNeg[8] = {
-		~(1 << 7),
-		~(1 << 6),
-		~(1 << 5),
-		~(1 << 4),
-		~(1 << 3),
-		~(1 << 2),
-		~(1 << 1),
-		~(1)
+		(uint8_t)~uint8_t(128),
+		(uint8_t)~uint8_t(64),
+		(uint8_t)~uint8_t(32),
+		(uint8_t)~uint8_t(16),
+		(uint8_t)~uint8_t(8),
+		(uint8_t)~uint8_t(4),
+		(uint8_t)~uint8_t(2),
+		(uint8_t)~uint8_t(1u)
 	};
 
 	for (size_t i = 0; i < bitCount; i++)

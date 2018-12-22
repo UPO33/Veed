@@ -35,6 +35,7 @@ project(Veed)
 
 
 
+
 add_definitions(-DUNICODE -D_UNICODE)
 
 
@@ -56,7 +57,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${VPLATFORM_NAME})
 
 #wall == enable all warning
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++latest")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 
 
 
@@ -76,6 +77,7 @@ file(GLOB_RECURSE HEADERS_NetTest "Src/NetTest/*.h")
 
 file(GLOB_RECURSE HEADERS_ImGui "Src/ImGui/*.h")
 file(GLOB_RECURSE SOURCES_ImGui "Src/ImGui/*.cpp")
+
 
 
 add_library(VCore STATIC

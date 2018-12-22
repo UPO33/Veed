@@ -1,5 +1,6 @@
 #pragma once
 
+#include "VCoreBase.h"
 
 /*
 only grows and the allocated memory for the chunks will be freed by DTor or Destroy()

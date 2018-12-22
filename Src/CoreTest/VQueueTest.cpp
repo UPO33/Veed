@@ -48,7 +48,10 @@ void VTest_Queue()
 		//VASSERT(intQ0.Length() == 4);
 	}
 
+	VLOG_MSG("hehe");
+
+	VASSERT(false);
 	//VASSERT(gTestN == 0);
 
- 	//VLOG_MSG("");
+ 	VLOG_MSG("");
 }

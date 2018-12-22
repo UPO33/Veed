@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <vector>
 #include <ctime>
+#include <cstring>
 
 enum ELogColor
 {
@@ -155,7 +156,7 @@ inline void ZZSPrintAuto(VLogTokenPack& out, const char* format)
 		format++;
 	}
 }
-template<typename T, typename... TArgs> void ZZSPrintAuto(VLogTokenPack& data, const char* format, const T& value, const TArgs&... args)
+template<typename T, typename... TArgs> void ZZSPrintAuto(VLogTokenPack& data, const char* format, const T& value, const TArgs... args)
 {
 	while (*format)
 	{
@@ -192,7 +193,7 @@ template<typename T, typename... TArgs> void ZZSPrintAuto(VLogTokenPack& data, c
 }
 
 
-template<typename... TArgs> void VLogExtractTokens(VLogTokenPack& outTokens, const char* format, const TArgs&... args)
+template<typename... TArgs> void VLogExtractTokens(VLogTokenPack& outTokens, const char* format, const TArgs... args)
 {
 	outTokens.NewToken(false);
 	ZZSPrintAuto(outTokens, format, args...);
@@ -225,14 +226,22 @@ if(VLogger::Get().Check(__FUNCTION__))\
 	logData.mClock = std::clock();\
 	logData.mLevel = level;\
 	logData.mArgsStr = #__VA_ARGS__;\
-	VLogExtractTokens(logData.mTokens, format, ##__VA_ARGS__);\
+	VLogExtractTokens(logData.mTokens, format, ##__VA_ARGS__ );\
 	VLogger::Get().mLogs.push_back(logData);\
 	VPrintLogEntryToConsole(logData);\
 }\
 
-#define VLOG_MSG(format, ...) VLOG_BASE(ELL_Message, format, __VA_ARGS__ )
-#define VLOG_ERR(format, ...) VLOG_BASE(ELL_Error  , format, __VA_ARGS__ )
-#define VLOG_WRN(format, ...) VLOG_BASE(ELL_Warning, format, __VA_ARGS__ )
-#define VLOG_SUC(format, ...) VLOG_BASE(ELL_Success, format, __VA_ARGS__ )
-#define VLOG_DBG(format, ...) VLOG_BASE(ELL_Debug  , format, __VA_ARGS__ )
+#if 1
+#define VLOG_MSG(format, ...) VLOG_BASE(ELL_Message, format, ##__VA_ARGS__ )
+#define VLOG_ERR(format, ...) VLOG_BASE(ELL_Error  , format, ##__VA_ARGS__ )
+#define VLOG_WRN(format, ...) VLOG_BASE(ELL_Warning, format, ##__VA_ARGS__ )
+#define VLOG_SUC(format, ...) VLOG_BASE(ELL_Success, format, ##__VA_ARGS__ )
+#define VLOG_DBG(format, ...) VLOG_BASE(ELL_Debug  , format, ##__VA_ARGS__ )
+#else
+#define VLOG_MSG(format, ...)
+#define VLOG_ERR(format, ...)
+#define VLOG_WRN(format, ...)
+#define VLOG_SUC(format, ...)
+#define VLOG_DBG(format, ...)
 
+#endif

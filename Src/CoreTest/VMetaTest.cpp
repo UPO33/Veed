@@ -39,7 +39,7 @@ VPROPERTY(mFloat)
 VPROPERTY(mObjectPointer)
 VPROPERTY(mIntArray)
 VPROPERTY(mBoolArray);
-VPROPERTY(mArrayObjectStar)
+//VPROPERTY(mArrayObjectStar)
 VPROPERTY(mObjectPtr)
 VPROPERTY(mSubclass)
 VPROPERTY(mVec2)

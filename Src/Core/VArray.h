@@ -363,7 +363,7 @@ public:
 	{
 		VASSERT(Length() > 0);
 		mHeader->mLength--;
-		(mHeader->mItems + mLength)->~TElement();
+		(mHeader->mItems + mHeader->mLength)->~TElement();
 	}
 	void PopN(size_t count)
 	{
@@ -378,7 +378,7 @@ public:
 	{
 		VASSERT(Length() > 0);
 		mHeader->mLength--;
-		out = std::move(mHeader->mItems[mLength]);
+		out = std::move(mHeader->mItems[mHeader->mLength]);
 	}
 	//destroy all elements and free the memory
 	void Empty()
@@ -545,13 +545,13 @@ template<typename TElement, unsigned MaxElement> struct alignas(TElement) VStack
 	//find the first specified element and remove it by shifting array.
 	int RemoveFirstShift(const TElement& item)
 	{
-		index = FindFirst(item);
+		auto index = FindFirst(item);
 		if (index != -1) RemoveAtShift(index);
 		return index;
 	}
 	int RemoveFirstSwap(const TElement& item)
 	{
-		index = FindFirst(item);
+		auto index = FindFirst(item);
 		if (index != -1) RemoveAtSwap(index);
 		return index;
 	}
@@ -621,6 +621,6 @@ template<typename TElement, unsigned MaxElement> struct alignas(TElement) VStack
 	{
 		VASSERT(Length() > 0);
 		mLength--;
-		out = std::move(mHeader->mItems[mLength]);
+		out = std::move(Elements()[mLength]);
 	}
 };

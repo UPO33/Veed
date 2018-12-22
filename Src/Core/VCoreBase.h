@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <sstream>
 #include <cstdlib>
-
+#include <cstring>
 
 #define VASSERT(expression) assert(expression)
 

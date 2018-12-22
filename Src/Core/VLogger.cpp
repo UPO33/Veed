@@ -1,4 +1,6 @@
 #include "VLogger.h"
+#include "VCoreBase.h"
+
 #include <iostream>
 #include <iomanip>
 
@@ -113,6 +115,10 @@ inline WORD VToWin32Color(ELogColor bg, ELogColor fg)
 void VConsoleSetColor(ELogColor bg, ELogColor fg)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), VToWin32Color(bg, fg));
+}
+#else
+void VConsoleSetColor(ELogColor bg, ELogColor fg)
+{
 }
 #endif
 

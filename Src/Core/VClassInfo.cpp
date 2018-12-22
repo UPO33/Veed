@@ -97,9 +97,9 @@ void VMetaSys::PrintAllTypes()
 		if (VTypeInfo* pType = mTypes[i])
 		{
 			
-			VLOG_MSG("----------------------------");
+			//VLOG_MSG("----------------------------");
 			pType->PrintToLog(0);
-			VLOG_MSG("----------------------------");
+			//VLOG_MSG("----------------------------");
 		}
 	}
 }
@@ -107,7 +107,7 @@ void VMetaSys::PrintAllTypes()
 void VTypeInfo::PrintToLog(int indent) const
 {
 #ifndef VBUILD_SHIPPING
-	VLOG_MSG("%name: % size: % align: % id:%", VlogIndent(indent), mName, mSize, mAlign, mId);
+	//VLOG_MSG("%name: % size: % align: % id:%", VlogIndent(indent), mName, mSize, mAlign, mId);
 #endif
 }
 
@@ -119,7 +119,7 @@ void VClassTypeInfo::PrintToLog(int indent) const
 	{
 		if (VPropertyInfo* pProperty = mProperties[i])
 		{
-			VLOG_MSG("%[%] name % offset %", VlogIndent(indent), i, pProperty->mName, pProperty->mOffset);
+			//VLOG_MSG("%[%] name % offset %", VlogIndent(indent), i, pProperty->mName, pProperty->mOffset);
 			pProperty->mTypeInfo->PrintToLog(indent + 1);
 		}
 	}

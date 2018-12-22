@@ -1,5 +1,4 @@
 #include <stdexcept>
-#include <windows.h>
 #include <csignal>
 
 #define VRUN_TEST(funcname) \

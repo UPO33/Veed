@@ -1,5 +1,5 @@
 #include "../Core/VLogger.h"
-#include <windows.h>
+
 #include <iostream>
 
 void VTest_Log()
